@@ -585,7 +585,7 @@ proc_rsync(char *prog, char *bind_addr, int fd, int noop)
 	const char		*pp;
 	pid_t			 pid;
 	char			*args[32];
-	int			 st, rc = 0;
+	int			 st, rc = 0, ready;
 	struct stat		 stt;
 	struct pollfd		 pfd;
 	sigset_t		 mask, oldmask;
@@ -645,9 +645,19 @@ proc_rsync(char *prog, char *bind_addr, int fd, int noop)
 		err(1, NULL);
 
 	for (;;) {
+#ifdef HAVE_PPOLL
 		if (ppoll(&pfd, 1, NULL, &oldmask) == -1) {
 			if (errno != EINTR)
 				err(1, "ppoll");
+#else
+		sigprocmask(SIG_SETMASK, &oldmask, &mask);
+		ready = poll(&pfd, 1, INFTIM);
+		sigprocmask(SIG_SETMASK, &mask, NULL);
+
+		if (ready == -1) {
+			if (errno != EINTR)
+				err(1, "poll");
+#endif /* HAVE_PPOLL */
 
 			/*
 			 * If we've received an EINTR, it means that one
@@ -1380,7 +1390,7 @@ int
 main(int argc, char *argv[])
 {
 	int		 rc = 1, c, proc, st, rsync,
-			 fl = SOCK_STREAM | SOCK_CLOEXEC, noop = 0,
+			 fl = SOCK_STREAM, noop = 0,
 			 force = 0;
 	size_t		 i, j, eid = 1, outsz = 0, talsz = 0;
 	pid_t		 procpid, rsyncpid;
