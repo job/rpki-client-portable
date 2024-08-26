@@ -10,7 +10,7 @@ fi
 echo "pulling upstream openbsd source"
 if [ ! -d openbsd ]; then
 	if [ -z "${RPKICLIENT_GIT}" ]; then
-		git clone https://github.com/rpki-client/rpki-client-openbsd.git openbsd
+		git clone https://github.com/job/rpki-client-openbsd.git openbsd
 	else
 		git clone "${RPKICLIENT_GIT}/openbsd"
 	fi
